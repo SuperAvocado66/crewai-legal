@@ -1,0 +1,84 @@
+selection_task:
+  description: >
+    Analyze {applicant_mark},{applicant_mark_goods_and_services} and {conflicting_mark},{conflicting_mark_goods_and_services} 
+    to select the three most relevant legal arguments to explain 
+    the difference between {applicant_mark} and {conflicting_mark}.
+    Don't include any legal arguments that are not supportive to explain why {applicant_mark} is most unlikely to be confused with {conflicting_mark}.
+    Don't include your analysis in the output and only return the three selected legal arguments from the input list.
+    Don't include any other text in the output only the legal item from the list.
+    for example:
+    "The dissimilarity of the marks in their entireties as to appearance, sound, connotation and commercial impression"
+    "The dissimilarity and nature of the goods or services and trade channels of the two marks"
+    "The conditions under which and buyers to whom sales are made, sophisticated purchasing"
+  expected_output: A list of the three selected legal arguments from the input list.
+  async_execution: false
+  agent: legal_selection_specialist
+
+legal_drafting_task:
+  description: >
+    For each of the three legal arguments selected in the selection_task, generate a paragraph of
+    detailed legal argument to explain why {applicant_mark} is most unlikely to be confused with {conflicting_mark}
+    based on that specific legal argument.
+    
+    Consider the following:
+    - Applicant mark: {applicant_mark}
+    - Applicant goods and services: {applicant_mark_goods_and_services}
+    - Conflicting mark: {conflicting_mark}
+    - Conflicting goods and services: {conflicting_mark_goods_and_services}
+    
+    Your output should include three separate drafted arguments, one for each selected legal argument.
+    Each argument should be clearly labeled as "Argument 1:", "Argument 2:", and "Argument 3:" 
+    and should be concise (1-2 paragraphs) to ensure it fits well in the final document.
+    
+    Format your response as:
+    Argument 1: [Your detailed legal argument for the first selected argument]
+    Argument 2: [Your detailed legal argument for the second selected argument]
+    Argument 3: [Your detailed legal argument for the third selected argument]
+    
+  expected_output: Placeholder
+  async_execution: false
+  agent: legal_drafter
+  context:
+    - selection_task
+
+report_compilation_task:
+  description: >
+    Compile a final Word document report using the TemplateDocTool to process the template
+    at {template_path}. Your task is to:
+    
+    1. Create a dictionary mapping placeholders to values from the legal_drafter's output and input values
+    2. Use the TemplateDocTool to replace the placeholders while preserving all formatting (including bold and italic text)
+    
+    The placeholders in the template will be in the format {{placeholder_name}}.
+    Map the following placeholders to the appropriate values (without any curly braces in the final document):
+    - {{applicant_mark}} - The applicant's trademark from the input
+    - {{applicant_mark_goods_and_services}} - The applicant's goods and services from the input
+    - {{conflicting_mark}} - The conflicting trademark from the input
+    - {{conflicting_mark_goods_and_services}} - The conflicting mark's goods and services from the input
+    - {{selected_argument_1}}, {{selected_argument_2}}, {{selected_argument_3}} - The selected legal arguments from the legal_selection_specialist (these will be used as section headings)
+    - {{draft_1}}, {{draft_2}}, {{draft_3}} - The drafted legal arguments from the legal_drafter (these will be the body text under each corresponding selected_argument heading)
+    
+    Important: 
+    1. Extract the full text of each drafted argument from the legal_drafter's output
+    2. Make sure to remove any prefixes like "Argument 1:" from the draft text
+    3. Ensure the entire argument text is included without truncation
+    4. If the legal_drafter's output is not properly structured, parse it carefully to extract each argument
+    
+    Structure of the document:
+    - Each selected_argument will be a heading
+    - Each draft will be the body text under its corresponding heading
+    - For example, selected_argument_1 is the heading and draft_1 is the body text under that heading
+    
+    The output document should be saved as final_report_from_template.docx in the tools directory.
+  expected_output: >
+    A fully populated Word document that:
+    - Contains all original template content
+    - Has placeholders replaced with just the values (no curly braces)
+    - Maintains all formatting from the template, including bold and italic text
+    - Has each selected argument as a heading with its corresponding draft as the body text
+  async_execution: false
+  output_file: src/multi_agent_legal_draft_automation/tools/final_report_from_template.docx
+  agent: report_compiler
+  context:
+    - selection_task
+    - legal_drafting_task
